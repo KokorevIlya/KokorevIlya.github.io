@@ -1,0 +1,536 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Столицы Европы</title>
+<style>
+:root {
+  --bg:#101827; --card:#1b2638; --inner:#253249;
+  --text:#f4f7fb; --muted:#aab7ca; --blue:#71a7ff;
+  --green:#3dd598; --red:#ff6b78; --border:#34435a;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font:16px/1.5 system-ui,-apple-system,sans-serif;
+}
+button,input,select { font:inherit; }
+button {
+  border:0; border-radius:12px; padding:12px 15px;
+  background:var(--blue); color:#071426; font-weight:700;
+  cursor:pointer;
+}
+button:disabled { opacity:.5; cursor:default; }
+button.secondary { background:var(--inner); color:var(--text); border:1px solid var(--border); }
+button.active { background:var(--blue); color:#071426; }
+input,select {
+  width:100%; padding:12px; color:var(--text);
+  background:#111c2d; border:1px solid var(--border);
+  border-radius:12px; outline:none;
+}
+input:focus,select:focus { border-color:var(--blue); }
+label { display:block; color:var(--muted); font-size:14px; margin-bottom:6px; }
+.wrap { max-width:850px; margin:auto; padding:18px 14px 40px; }
+header { text-align:center; padding:10px 0 22px; }
+h1 { font-size:clamp(27px,6vw,38px); line-height:1.2; margin:0 0 8px; }
+h2 { margin-top:0; }
+.muted,.note { color:var(--muted); }
+.panel { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:18px; margin:14px 0; }
+.tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0; }
+.tabs button { padding:11px 4px; font-size:14px; }
+.row { display:flex; gap:9px; align-items:center; }
+.row > * { flex:1; min-width:0; }
+.field { margin:14px 0; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.stat { background:var(--inner); border-radius:12px; text-align:center; padding:10px 4px; }
+.stat small { display:block; color:var(--muted); font-size:12px; }
+.stat strong { font-size:23px; }
+.flag { display:block; width:112px; height:74px; object-fit:contain; margin:0 auto 12px; }
+.question { text-align:center; padding:12px 0; }
+.question h2 { font-size:clamp(25px,6vw,34px); margin:8px 0; overflow-wrap:anywhere; }
+.progress { height:7px; background:#0d1523; border-radius:9px; overflow:hidden; margin:14px 0; }
+.progress div { height:100%; width:0; background:var(--green); transition:width .2s; }
+.feedback { min-height:28px; margin:12px 0; font-weight:700; }
+.good { color:var(--green); }
+.bad { color:var(--red); }
+.hidden { display:none !important; }
+.note { font-size:12px; margin-top:14px; }
+.list { display:grid; gap:8px; margin-top:14px; }
+.country { display:flex; gap:12px; align-items:center; background:var(--inner); border-radius:12px; padding:10px; }
+.country .flag { width:54px; height:38px; margin:0; flex-shrink:0; }
+.country-info { flex:1; min-width:0; }
+.country-info strong,.country-info span { display:block; overflow-wrap:anywhere; }
+.country-info span { color:var(--muted); font-size:14px; }
+.small { font-size:13px; padding:8px 10px; }
+@media(min-width:600px) {
+  .wrap { padding:28px 20px 50px; }
+  .panel { padding:24px; }
+  .tabs button { font-size:16px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌍 Столицы Европы</h1>
+    <div class="muted">Тренируй память и изучай страны</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><small>Ответов</small><strong id="total">0</strong></div>
+    <div class="stat"><small>Правильно</small><strong id="correct">0</strong></div>
+    <div class="stat"><small>Точность</small><strong id="accuracy">0%</strong></div>
+  </div>
+
+  <nav class="tabs">
+    <button class="active" data-page="quiz">Тест</button>
+    <button class="secondary" data-page="countriesPage">Страны</button>
+    <button class="secondary" data-page="mistakesPage">Ошибки</button>
+  </nav>
+
+  <main>
+    <section id="quiz" class="panel">
+      <h2>Проверка знаний</h2>
+      <div class="row">
+        <div>
+          <label for="amount">Вопросов</label>
+          <select id="amount">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="all">Все страны</option>
+          </select>
+        </div>
+        <div>
+          <label for="direction">Направление</label>
+          <select id="direction">
+            <option value="capital">Страна → столица</option>
+            <option value="country">Столица → страна</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button id="start" style="width:100%">Начать тест</button>
+      </div>
+
+      <div id="game" class="hidden">
+        <div class="progress"><div id="bar"></div></div>
+        <div class="row muted">
+          <span id="counter">Вопрос 1</span>
+          <span id="remaining" style="text-align:right">Осталось: 10</span>
+        </div>
+        <div class="question">
+          <img id="quizFlag" class="flag" alt="Флаг страны">
+          <div id="hint" class="muted">Назови столицу страны</div>
+          <h2 id="question"></h2>
+        </div>
+        <form id="answerForm">
+          <label id="answerLabel" for="answer">Твой ответ</label>
+          <input id="answer" placeholder="Введи ответ..." autocomplete="off" required>
+          <div class="row" style="margin-top:10px">
+            <button type="submit" id="check">Проверить</button>
+            <button type="button" class="secondary" id="reveal">Показать ответ</button>
+          </div>
+        </form>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <button id="next" class="hidden" style="width:100%">Следующий вопрос →</button>
+      </div>
+
+      <div id="result" class="hidden">
+        <h2>Тест завершён! 🎉</h2>
+        <p id="resultText"></p>
+        <button id="again" style="width:100%">Пройти ещё раз</button>
+      </div>
+      <p class="note">Флаги загружаются из интернета. Результаты сохраняются в этом браузере.</p>
+    </section>
+
+    <section id="countriesPage" class="panel hidden">
+      <h2>Страны и столицы</h2>
+      <div class="field">
+        <label for="search">Поиск</label>
+        <input id="search" placeholder="Страна или столица">
+      </div>
+      <div class="field">
+        <label for="sort">Сортировка</label>
+        <select id="sort">
+          <option value="name">По стране</option>
+          <option value="capital">По столице</option>
+        </select>
+      </div>
+      <div id="listCount" class="muted"></div>
+      <div id="countryList" class="list"></div>
+    </section>
+
+    <section id="mistakesPage" class="panel hidden">
+      <h2>Повторение ошибок</h2>
+      <p class="muted">Неправильные ответы появятся здесь.</p>
+      <div class="row">
+        <button id="practiceMistakes">Повторить ошибки</button>
+        <button id="clearMistakes" class="secondary">Очистить</button>
+      </div>
+      <div id="mistakeList" class="list"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+/* Список стран. Казахстан, Армения, Азербайджан и Грузия исключены. */
+const countries = [
+  {name:"Австрия",capital:"Вена",code:"at"},
+  {name:"Албания",capital:"Тирана",code:"al"},
+  {name:"Андорра",capital:"Андорра-ла-Велья",code:"ad"},
+  {name:"Беларусь",capital:"Минск",code:"by"},
+  {name:"Бельгия",capital:"Брюссель",code:"be"},
+  {name:"Болгария",capital:"София",code:"bg"},
+  {name:"Босния и Герцеговина",capital:"Сараево",code:"ba"},
+  {name:"Ватикан",capital:"Ватикан",code:"va"},
+  {name:"Великобритания",capital:"Лондон",code:"gb"},
+  {name:"Венгрия",capital:"Будапешт",code:"hu"},
+  {name:"Германия",capital:"Берлин",code:"de"},
+  {name:"Греция",capital:"Афины",code:"gr"},
+  {name:"Дания",capital:"Копенгаген",code:"dk"},
+  {name:"Ирландия",capital:"Дублин",code:"ie"},
+  {name:"Исландия",capital:"Рейкьявик",code:"is"},
+  {name:"Испания",capital:"Мадрид",code:"es"},
+  {name:"Италия",capital:"Рим",code:"it"},
+  {name:"Кипр",capital:"Никосия",code:"cy"},
+  {name:"Косово",capital:"Приштина",code:"xk"},
+  {name:"Латвия",capital:"Рига",code:"lv"},
+  {name:"Литва",capital:"Вильнюс",code:"lt"},
+  {name:"Лихтенштейн",capital:"Вадуц",code:"li"},
+  {name:"Люксембург",capital:"Люксембург",code:"lu"},
+  {name:"Мальта",capital:"Валлетта",code:"mt"},
+  {name:"Молдова",capital:"Кишинёв",code:"md"},
+  {name:"Монако",capital:"Монако",code:"mc"},
+  {name:"Нидерланды",capital:"Амстердам",code:"nl"},
+  {name:"Норвегия",capital:"Осло",code:"no"},
+  {name:"Польша",capital:"Варшава",code:"pl"},
+  {name:"Португалия",capital:"Лиссабон",code:"pt"},
+  {name:"Россия",capital:"Москва",code:"ru"},
+  {name:"Румыния",capital:"Бухарест",code:"ro"},
+  {name:"Сан-Марино",capital:"Сан-Марино",code:"sm"},
+  {name:"Северная Македония",capital:"Скопье",code:"mk"},
+  {name:"Сербия",capital:"Белград",code:"rs"},
+  {name:"Словакия",capital:"Братислава",code:"sk"},
+  {name:"Словения",capital:"Любляна",code:"si"},
+  {name:"Турция",capital:"Анкара",code:"tr"},
+  {name:"Украина",capital:"Киев",code:"ua"},
+  {name:"Финляндия",capital:"Хельсинки",code:"fi"},
+  {name:"Франция",capital:"Париж",code:"fr"},
+  {name:"Хорватия",capital:"Загреб",code:"hr"},
+  {name:"Черногория",capital:"Подгорица",code:"me"},
+  {name:"Чехия",capital:"Прага",code:"cz"},
+  {name:"Швейцария",capital:"Берн",code:"ch"},
+  {name:"Швеция",capital:"Стокгольм",code:"se"},
+  {name:"Эстония",capital:"Таллин",code:"ee"}
+];
+
+const $ = id => document.getElementById(id);
+const flagURL = c => "https://flagcdn.com/w320/" + c.code + ".png";
+
+function normalize(value) {
+  return String(value).toLocaleLowerCase("ru")
+    .replace(/ё/g,"е")
+    .trim()
+    .replace(/\s+/g," ");
+}
+
+function readNumber(key) {
+  try { return Number(localStorage.getItem(key)) || 0; }
+  catch (e) { return 0; }
+}
+function writeNumber(key,value) {
+  try { localStorage.setItem(key,String(value)); } catch (e) {}
+}
+function readMistakes() {
+  try { return JSON.parse(localStorage.getItem("euroMistakes") || "[]"); }
+  catch (e) { return []; }
+}
+function writeMistakes() {
+  try { localStorage.setItem("euroMistakes",JSON.stringify(mistakes)); } catch (e) {}
+}
+
+let total = readNumber("euroTotal");
+let correct = readNumber("euroCorrect");
+let mistakes = readMistakes();
+let deck = [];
+let position = 0;
+let current = null;
+let locked = false;
+let sessionCorrect = 0;
+let sessionWrong = 0;
+
+function updateStats() {
+  $("total").textContent = total;
+  $("correct").textContent = correct;
+  $("accuracy").textContent = total ? Math.round(correct / total * 100) + "%" : "0%";
+}
+updateStats();
+
+document.querySelectorAll("[data-page]").forEach(button => {
+  button.addEventListener("click",() => {
+    document.querySelectorAll("[data-page]").forEach(b => {
+      b.classList.toggle("active",b === button);
+      b.classList.toggle("secondary",b !== button);
+    });
+    ["quiz","countriesPage","mistakesPage"].forEach(id => {
+      $(id).classList.toggle("hidden",id !== button.dataset.page);
+    });
+    if (button.dataset.page === "countriesPage") renderCountries();
+    if (button.dataset.page === "mistakesPage") renderMistakes();
+  });
+});
+
+function shuffle(array) {
+  const result = array.slice();
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i],result[j]] = [result[j],result[i]];
+  }
+  return result;
+}
+
+function startTest(source) {
+  let pool = source ? source.slice() : countries.slice();
+  if (!source) {
+    const amount = $("amount").value;
+    pool = shuffle(pool);
+    if (amount !== "all") pool = pool.slice(0,Number(amount));
+  } else {
+    pool = shuffle(pool);
+  }
+
+  if (!pool.length) {
+    alert("Нет стран для тренировки.");
+    return;
+  }
+
+  const direction = $("direction").value;
+  deck = pool.map(country => ({country,direction}));
+  position = 0;
+  sessionCorrect = 0;
+  sessionWrong = 0;
+  $("start").classList.remove("hidden");
+  $("start").disabled = true;
+  $("game").classList.remove("hidden");
+  $("result").classList.add("hidden");
+  showQuestion();
+}
+
+function showQuestion() {
+  if (position >= deck.length) {
+    finishTest();
+    return;
+  }
+
+  current = deck[position];
+  locked = false;
+  const c = current.country;
+  const reverse = current.direction === "country";
+
+  $("quizFlag").src = flagURL(c);
+  $("quizFlag").alt = "Флаг: " + c.name;
+  $("hint").textContent = reverse ? "Назови страну по столице" : "Назови столицу страны";
+  $("question").textContent = reverse ? c.capital : c.name;
+  $("answerLabel").textContent = reverse ? "Название страны" : "Название столицы";
+  $("answer").value = "";
+  $("answer").disabled = false;
+  $("check").disabled = false;
+  $("feedback").textContent = "";
+  $("feedback").className = "feedback";
+  $("next").classList.add("hidden");
+  $("counter").textContent = "Вопрос " + (position + 1) + " из " + deck.length;
+  $("remaining").textContent = "Осталось: " + (deck.length - position);
+  $("bar").style.width = (position / deck.length * 100) + "%";
+  $("answer").focus({preventScroll:true});
+}
+
+function recordMistake(country) {
+  if (!mistakes.includes(country.name)) mistakes.push(country.name);
+  writeMistakes();
+}
+
+function answerQuestion(event) {
+  if (event) event.preventDefault();
+  if (locked || !current) return;
+
+  const answer = normalize($("answer").value);
+  if (!answer) {
+    $("feedback").textContent = "Сначала введи ответ.";
+    $("feedback").className = "feedback bad";
+    return;
+  }
+
+  const c = current.country;
+  const expected = current.direction === "country" ? c.name : c.capital;
+  locked = true;
+  total++;
+  writeNumber("euroTotal",total);
+
+  if (answer === normalize(expected)) {
+    correct++;
+    sessionCorrect++;
+    writeNumber("euroCorrect",correct);
+    $("feedback").textContent = "Правильно! ✓";
+    $("feedback").className = "feedback good";
+  } else {
+    sessionWrong++;
+    recordMistake(c);
+    $("feedback").textContent = "Правильный ответ: " + expected;
+    $("feedback").className = "feedback bad";
+  }
+
+  updateStats();
+  $("answer").disabled = true;
+  $("check").disabled = true;
+  $("next").classList.remove("hidden");
+  $("bar").style.width = ((position + 1) / deck.length * 100) + "%";
+  $("remaining").textContent = "Осталось: " + (deck.length - position - 1);
+}
+
+function revealAnswer() {
+  if (locked || !current) return;
+  const c = current.country;
+  const expected = current.direction === "country" ? c.name : c.capital;
+  $("answer").value = expected;
+  locked = true;
+  total++;
+  sessionWrong++;
+  writeNumber("euroTotal",total);
+  recordMistake(c);
+  updateStats();
+  $("feedback").textContent = "Ответ: " + expected + ". Засчитано как ошибка.";
+  $("feedback").className = "feedback bad";
+  $("answer").disabled = true;
+  $("check").disabled = true;
+  $("next").classList.remove("hidden");
+}
+
+function finishTest() {
+  $("game").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  $("start").disabled = false;
+  $("resultText").textContent =
+    "Правильных ответов: " + sessionCorrect + " из " + deck.length +
+    ". Ошибок: " + sessionWrong + ".";
+  $("bar").style.width = "100%";
+  renderMistakes();
+}
+
+function renderCountries() {
+  const query = normalize($("search").value);
+  const sort = $("sort").value;
+  const list = countries.filter(c =>
+    normalize(c.name).includes(query) || normalize(c.capital).includes(query)
+  );
+  list.sort((a,b) => a[sort].localeCompare(b[sort],"ru"));
+  $("listCount").textContent = "Найдено стран: " + list.length;
+  $("countryList").replaceChildren();
+
+  list.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "country";
+
+    const img = document.createElement("img");
+    img.className = "flag";
+    img.src = flagURL(c);
+    img.alt = "Флаг " + c.name;
+    img.loading = "lazy";
+
+    const info = document.createElement("div");
+    info.className = "country-info";
+    const name = document.createElement("strong");
+    name.textContent = c.name;
+    const capital = document.createElement("span");
+    capital.textContent = "Столица: " + c.capital;
+    info.append(name,capital);
+    item.append(img,info);
+    $("countryList").append(item);
+  });
+}
+
+function renderMistakes() {
+  $("mistakeList").replaceChildren();
+  const list = countries.filter(c => mistakes.includes(c.name));
+
+  if (!list.length) {
+    const message = document.createElement("p");
+    message.className = "muted";
+    message.textContent = "Ошибок пока нет. Пройди тест!";
+    $("mistakeList").append(message);
+    return;
+  }
+
+  list.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "country";
+
+    const img = document.createElement("img");
+    img.className = "flag";
+    img.src = flagURL(c);
+    img.alt = "Флаг " + c.name;
+    img.loading = "lazy";
+
+    const info = document.createElement("div");
+    info.className = "country-info";
+    const name = document.createElement("strong");
+    name.textContent = c.name;
+    const capital = document.createElement("span");
+    capital.textContent = "Столица: " + c.capital;
+    info.append(name,capital);
+
+    const remove = document.createElement("button");
+    remove.className = "secondary small";
+    remove.textContent = "Убрать";
+    remove.addEventListener("click",() => {
+      mistakes = mistakes.filter(n => n !== c.name);
+      writeMistakes();
+      renderMistakes();
+    });
+
+    item.append(img,info,remove);
+    $("mistakeList").append(item);
+  });
+}
+
+$("answerForm").addEventListener("submit",answerQuestion);
+$("start").addEventListener("click",() => startTest());
+$("again").addEventListener("click",() => startTest());
+$("reveal").addEventListener("click",revealAnswer);
+
+$("next").addEventListener("click",() => {
+  position++;
+  showQuestion();
+});
+
+$("search").addEventListener("input",renderCountries);
+$("sort").addEventListener("change",renderCountries);
+
+$("practiceMistakes").addEventListener("click",() => {
+  const list = countries.filter(c => mistakes.includes(c.name));
+  if (!list.length) {
+    alert("Список ошибок пуст.");
+    return;
+  }
+  document.querySelector('[data-page="quiz"]').click();
+  startTest(list);
+});
+
+$("clearMistakes").addEventListener("click",() => {
+  if (confirm("Удалить все ошибки?")) {
+    mistakes = [];
+    writeMistakes();
+    renderMistakes();
+  }
+});
+
+renderCountries();
+renderMistakes();
+</script>
+</body>
+</html>
+```
